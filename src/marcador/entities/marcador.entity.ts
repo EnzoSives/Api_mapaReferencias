@@ -19,4 +19,18 @@ export class Marcador {
 
   @Column()
   icono: string;
+
+  constructor(
+    nombre: string,
+    latitud: number,
+    longitud: number,
+    icono: string,
+    descripcion?: string,
+  ) {
+    this.nombre = nombre;
+    this.latitud = latitud;
+    this.longitud = longitud;
+    this.icono = icono;
+    this.descripcion = descripcion || null;
+  }
 }
