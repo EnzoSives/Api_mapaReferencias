@@ -16,11 +16,14 @@ export class MarcadorService {
   }
 
   findAll() {
-    return this.marcadorRepo.find();
+    return this.marcadorRepo.find({ relations: ['integrantes'] });
   }
 
   findOne(id: number) {
-    return this.marcadorRepo.findOneBy({ id });
+    return this.marcadorRepo.findOne({
+      where: { id },
+      relations: ['integrantes'],
+    });
   }
 
   update(id: number, data: Partial<Marcador>) {

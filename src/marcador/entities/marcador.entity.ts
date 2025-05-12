@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity'; // Ajusta la ruta según tu estructura
 
 @Entity()
 export class Marcador {
@@ -19,6 +20,11 @@ export class Marcador {
 
   @Column()
   icono: string;
+
+  @OneToMany(() => IntegranteFamilia, (integrante) => integrante.marcador, {
+    cascade: true,
+  })
+  integrantes: IntegranteFamilia[];
 
   constructor(
     nombre: string,
