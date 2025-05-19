@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity'; // Ajusta la ruta según tu estructura
+import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity';
 
 @Entity()
 export class Marcador {
@@ -7,10 +7,22 @@ export class Marcador {
   id: number;
 
   @Column()
-  nombre: string;
+  nombreApellido: string;
+
+  @Column()
+  direccion: string;
+
+  @Column()
+  telefono: string;
+
+  @Column()
+  dni: string;
 
   @Column({ nullable: true })
-  descripcion: string;
+  notas: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  ayudas: string[];
 
   @Column('double')
   latitud: number;
@@ -27,16 +39,24 @@ export class Marcador {
   integrantes: IntegranteFamilia[];
 
   constructor(
-    nombre: string,
+    nombreApellido: string,
+    direccion: string,
+    telefono: string,
+    dni: string,
     latitud: number,
     longitud: number,
     icono: string,
-    descripcion?: string,
+    notas?: string,
+    ayudas?: string[]
   ) {
-    this.nombre = nombre;
+    this.nombreApellido = nombreApellido;
+    this.direccion = direccion;
+    this.telefono = telefono;
+    this.dni = dni;
     this.latitud = latitud;
     this.longitud = longitud;
     this.icono = icono;
-    this.descripcion = descripcion || null;
+    this.notas = notas || null;
+    this.ayudas = ayudas || [];
   }
 }
