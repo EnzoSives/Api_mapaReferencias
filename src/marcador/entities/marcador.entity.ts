@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity';
+import { Programa } from '../../programa/entities/programa.entity';
 
 @Entity()
 export class Marcador {
@@ -21,8 +22,8 @@ export class Marcador {
   @Column({ nullable: true })
   notas: string;
 
-  @Column({ type: 'simple-array', nullable: true })
-  ayudas: string[];
+  // @Column({ type: 'simple-array', nullable: true })
+  // ayudas: string[];
 
   @Column('double')
   latitud: number;
@@ -38,6 +39,11 @@ export class Marcador {
   })
   integrantes: IntegranteFamilia[];
 
+  @OneToMany(() => Programa, (programa) => programa.marcador, {
+    cascade: true,
+  })
+  programas: Programa[];
+
   constructor(
     nombreApellido: string,
     direccion: string,
@@ -47,7 +53,7 @@ export class Marcador {
     longitud: number,
     icono: string,
     notas?: string,
-    ayudas?: string[]
+    // ayudas?: string[]
   ) {
     this.nombreApellido = nombreApellido;
     this.direccion = direccion;
@@ -57,6 +63,6 @@ export class Marcador {
     this.longitud = longitud;
     this.icono = icono;
     this.notas = notas || null;
-    this.ayudas = ayudas || [];
+    // this.ayudas = ayudas || [];
   }
 }

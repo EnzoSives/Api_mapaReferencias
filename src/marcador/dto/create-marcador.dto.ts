@@ -1,4 +1,5 @@
 // create-marcador.dto.ts
+import { CreateProgramaDto } from 'src/programa/dto/create-programa.dto';
 import { CreateIntegranteFamiliaDto } from '../../integrante_familiar/dto/create-integrante_familiar.dto';
 
 export class CreateMarcadorDto {
@@ -12,4 +13,5 @@ export class CreateMarcadorDto {
   longitud: number;
   icono: string;
   integrantes: CreateIntegranteFamiliaDto[];
+  programas?: CreateProgramaDto[]; // Opcional, si se desea incluir programas directamente
 }

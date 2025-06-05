@@ -12,8 +12,8 @@ export class IntegranteFamilia {
   @Column()
   apellido: string;
 
-  @Column()
-  edad: number;
+  @Column({ nullable: true })
+  edad: number | null;
 
   @Column()
   dni: string;

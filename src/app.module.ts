@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './roles/roles.guard';
 import { MarcadorModule } from './marcador/marcador.module';
 import { IntegranteFamiliarModule } from './integrante_familiar/integrante_familiar.module';
+import { ProgramaModule } from './programa/programa.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { IntegranteFamiliarModule } from './integrante_familiar/integrante_famil
     UserModule,
     MarcadorModule,
     IntegranteFamiliarModule,
+    ProgramaModule,
   ],
   controllers: [AppController],
   providers: [AppService , {

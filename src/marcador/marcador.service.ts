@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Marcador } from './entities/marcador.entity';
 import { IntegranteFamilia } from '../integrante_familiar/entities/integrante_familiar.entity';
 import { Repository } from 'typeorm';
+import { Programa } from 'src/programa/entities/programa.entity';
 
 @Injectable()
 export class MarcadorService {
@@ -12,6 +13,9 @@ export class MarcadorService {
 
     @InjectRepository(IntegranteFamilia)
     private integranteRepo: Repository<IntegranteFamilia>, // 👈 agregado
+
+    @InjectRepository(Programa)
+    private programaRepo: Repository<Programa>,
   ) {}
 
   create(data: Partial<Marcador>) {
@@ -20,27 +24,27 @@ export class MarcadorService {
   }
 
   findAll() {
-    return this.marcadorRepo.find({ relations: ['integrantes'] });
+    return this.marcadorRepo.find({ relations: ['integrantes', 'programas'] });
   }
 
   findOne(id: number) {
     return this.marcadorRepo.findOne({
       where: { id },
-      relations: ['integrantes'],
+      relations: ['integrantes', 'programas'],
     });
   }
 
   async update(id: number, data: Partial<Marcador>) {
     const marcador = await this.marcadorRepo.findOne({
       where: { id },
-      relations: ['integrantes'],
+      relations: ['integrantes', 'programas'],
     });
 
     if (!marcador) {
       throw new NotFoundException('Marcador no encontrado');
     }
 
-    const { integrantes, ...resto } = data;
+    const { integrantes, programas, ...resto } = data;
 
     // Actualiza campos simples
     Object.assign(marcador, resto);
@@ -55,6 +59,20 @@ export class MarcadorService {
       // Asocia los nuevos integrantes al marcador
       marcador.integrantes = integrantes.map((i) => ({
         ...i,
+        marcador: marcadorCompleto,
+      }));
+    }
+
+    if (programas) {
+      // Borra programas anteriores
+      await this.programaRepo.delete({ marcador: { id } });
+
+      // Obtiene el marcador completo para asignar a los programas
+      const marcadorCompleto = await this.marcadorRepo.findOne({ where: { id } });
+
+      // Asocia los nuevos programas al marcador
+      marcador.programas = programas.map((p) => ({
+        ...p,
         marcador: marcadorCompleto,
       }));
     }
