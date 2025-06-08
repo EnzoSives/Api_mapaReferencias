@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
 import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity';
 import { Programa } from '../../programa/entities/programa.entity';
 
@@ -33,6 +33,10 @@ export class Marcador {
 
   @Column()
   icono: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  fechaCreacion: Date;
+
 
   @OneToMany(() => IntegranteFamilia, (integrante) => integrante.marcador, {
     cascade: true,
