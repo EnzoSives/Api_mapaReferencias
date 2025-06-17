@@ -44,7 +44,9 @@ export class Marcador {
   integrantes: IntegranteFamilia[];
 
   @OneToMany(() => Programa, (programa) => programa.marcador, {
-    cascade: true,
+    cascade: ['insert'], // Solo permite insertar nuevos programas
+    // Alternativa: remover cascade completamente
+    // cascade: false,
   })
   programas: Programa[];
 
