@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsString, IsInt } from 'class-validator';
+import { CreateSaludDto } from 'src/salud/dto/create-salud.dto';
 
 export class CreateIntegranteFamiliaDto {
   @IsString()
@@ -15,6 +16,12 @@ export class CreateIntegranteFamiliaDto {
   @IsString()
   @IsNotEmpty()
   dni: string;
+
+  @IsString()
+  @IsNotEmpty()
+  vinculo: string;
+
+  salud?: CreateSaludDto[];
 
   @IsInt()
   @IsNotEmpty()

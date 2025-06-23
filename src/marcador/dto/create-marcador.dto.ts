@@ -3,7 +3,8 @@ import { CreateProgramaDto } from 'src/programa/dto/create-programa.dto';
 import { CreateIntegranteFamiliaDto } from '../../integrante_familiar/dto/create-integrante_familiar.dto';
 
 export class CreateMarcadorDto {
-  nombreApellido: string;
+  nombre: string;
+  apellido: string;
   direccion: string;
   telefono: string;
   dni: string;

@@ -9,6 +9,11 @@ import { RolesGuard } from './roles/roles.guard';
 import { MarcadorModule } from './marcador/marcador.module';
 import { IntegranteFamiliarModule } from './integrante_familiar/integrante_familiar.module';
 import { ProgramaModule } from './programa/programa.module';
+import { EstudioModule } from './estudio/estudio.module';
+import { OcupacionModule } from './ocupacion/ocupacion.module';
+import { ViviendaModule } from './vivienda/vivienda.module';
+import { ServicioModule } from './servicio/servicio.module';
+import { SaludModule } from './salud/salud.module';
 
 @Module({
   imports: [
@@ -27,6 +32,11 @@ import { ProgramaModule } from './programa/programa.module';
     MarcadorModule,
     IntegranteFamiliarModule,
     ProgramaModule,
+    EstudioModule,
+    OcupacionModule,
+    ViviendaModule,
+    ServicioModule,
+    SaludModule,
   ],
   controllers: [AppController],
   providers: [AppService , {

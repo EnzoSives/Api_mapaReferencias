@@ -1,6 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  CreateDateColumn,
+} from 'typeorm';
 import { IntegranteFamilia } from '../../integrante_familiar/entities/integrante_familiar.entity';
 import { Programa } from '../../programa/entities/programa.entity';
+import { Estudio } from '../../estudio/entities/estudio.entity';
+import { Ocupacion } from '../../ocupacion/entities/ocupacion.entity';
+import { Vivienda } from '../../vivienda/entities/vivienda.entity';
+import { Servicio } from '../../servicio/entities/servicio.entity';
+import { Salud } from 'src/salud/entities/salud.entity';
 
 @Entity()
 export class Marcador {
@@ -8,7 +19,10 @@ export class Marcador {
   id: number;
 
   @Column()
-  nombreApellido: string;
+  nombre: string;
+  
+  @Column()
+  apellido: string;
 
   @Column()
   direccion: string;
@@ -22,9 +36,6 @@ export class Marcador {
   @Column({ nullable: true })
   notas: string;
 
-  // @Column({ type: 'simple-array', nullable: true })
-  // ayudas: string[];
-
   @Column('double')
   latitud: number;
 
@@ -37,21 +48,44 @@ export class Marcador {
   @CreateDateColumn({ type: 'timestamp' })
   fechaCreacion: Date;
 
-
   @OneToMany(() => IntegranteFamilia, (integrante) => integrante.marcador, {
     cascade: true,
   })
   integrantes: IntegranteFamilia[];
 
   @OneToMany(() => Programa, (programa) => programa.marcador, {
-    cascade: ['insert'], // Solo permite insertar nuevos programas
-    // Alternativa: remover cascade completamente
-    // cascade: false,
+    cascade: ['insert'],
   })
   programas: Programa[];
 
+  @OneToMany(() => Estudio, (estudio) => estudio.marcador, {
+    cascade: true,
+  })
+  estudios: Estudio[];
+
+  @OneToMany(() => Ocupacion, (ocupacion) => ocupacion.marcador, {
+    cascade: true,
+  })
+  ocupaciones: Ocupacion[];
+
+  @OneToMany(() => Vivienda, (vivienda) => vivienda.marcador, {
+    cascade: true,
+  })
+  viviendas: Vivienda[];
+
+  @OneToMany(() => Servicio, (servicio) => servicio.marcador, {
+    cascade: true,
+  })
+  servicios: Servicio[];
+
+  @OneToMany(() => Salud, (salud) => salud.marcador, {
+    cascade: true,
+  })
+  salud: Salud[];
+
   constructor(
-    nombreApellido: string,
+    nombre: string,
+    apellido: string,
     direccion: string,
     telefono: string,
     dni: string,
@@ -59,9 +93,9 @@ export class Marcador {
     longitud: number,
     icono: string,
     notas?: string,
-    // ayudas?: string[]
   ) {
-    this.nombreApellido = nombreApellido;
+    this.nombre = nombre;
+    this.apellido = apellido;
     this.direccion = direccion;
     this.telefono = telefono;
     this.dni = dni;
@@ -69,6 +103,5 @@ export class Marcador {
     this.longitud = longitud;
     this.icono = icono;
     this.notas = notas || null;
-    // this.ayudas = ayudas || [];
   }
 }

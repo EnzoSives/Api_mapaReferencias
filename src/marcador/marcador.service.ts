@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Marcador } from './entities/marcador.entity';
 import { IntegranteFamilia } from '../integrante_familiar/entities/integrante_familiar.entity';
-import { Repository } from 'typeorm';
-import { Programa } from 'src/programa/entities/programa.entity';
+import { Programa } from '../programa/entities/programa.entity';
 
 @Injectable()
 export class MarcadorService {
@@ -24,229 +24,187 @@ export class MarcadorService {
   }
 
   findAll() {
-    return this.marcadorRepo.find({ relations: ['integrantes', 'programas'] });
+    return this.marcadorRepo.find({
+      relations: [
+        'integrantes',
+        'integrantes.salud',
+        'programas',
+        'estudios',
+        'ocupaciones',
+        'viviendas',
+        'servicios',
+        'salud',
+      ],
+    });
   }
 
   findOne(id: number) {
     return this.marcadorRepo.findOne({
       where: { id },
-      relations: ['integrantes', 'programas'],
+      relations: [
+        'integrantes',
+        'integrantes.salud',
+        'programas',
+        'estudios',
+        'ocupaciones',
+        'viviendas',
+        'servicios',
+        'salud',
+      ],
     });
   }
 
   async update(id: number, data: Partial<Marcador>) {
-    const marcador = await this.marcadorRepo.findOne({
-      where: { id },
-      relations: ['integrantes', 'programas'],
-    });
+  // Primero verificar que el marcador existe
+  const marcadorExistente = await this.marcadorRepo.findOne({
+    where: { id },
+    relations: [
+      'integrantes',
+      'programas',
+      'estudios',
+      'ocupaciones',
+      'viviendas',
+      'servicios',
+      'salud',
+    ],
+  });
 
-    if (!marcador) {
-      throw new NotFoundException('Marcador no encontrado');
-    }
-
-    const { integrantes, programas, ...resto } = data;
-
-    // Actualiza campos simples del marcador
-    Object.assign(marcador, resto);
-
-    // Manejo de integrantes (mantiene la lógica original si necesitas reemplazar)
-    if (integrantes) {
-      // Borra integrantes anteriores
-      await this.integranteRepo.delete({ marcador: { id } });
-
-      // Obtiene el marcador completo para asignar a los integrantes
-      const marcadorCompleto = await this.marcadorRepo.findOne({ where: { id } });
-
-      // Asocia los nuevos integrantes al marcador
-      marcador.integrantes = integrantes.map((i) => ({
-        ...i,
-        marcador: marcadorCompleto,
-      }));
-    }
-
-    // NUEVO MANEJO DE PROGRAMAS - PRESERVA EL HISTORIAL
-    if (programas) {
-      await this.actualizarProgramasConHistorial(id, programas);
-    }
-
-    // Guarda solo los cambios del marcador (sin los programas, que ya se manejaron)
-    const { programas: _, ...marcadorSinProgramas } = marcador;
-    return this.marcadorRepo.save(marcadorSinProgramas);
+  if (!marcadorExistente) {
+    throw new NotFoundException('Marcador no encontrado');
   }
 
-  // NUEVO MÉTODO: Actualiza programas de forma granular
-  private async actualizarProgramasConHistorial(marcadorId: number, nuevosProgramas: Partial<Programa>[]) {
-    // 1. Obtener programas activos actuales
-    const programasActivos = await this.programaRepo.find({
-      where: { 
-        marcador: { id: marcadorId },
-        estado: 'activo'
-      }
+  const {
+    integrantes,
+    programas,
+    estudios,
+    ocupaciones,
+    viviendas,
+    servicios,
+    salud,
+    ...resto
+  } = data;
+
+  // 1. PRIMERO: Actualizar programas con historial (antes de modificar el marcador)
+  if (programas) {
+    await this.actualizarProgramasConHistorial(id, programas);
+  }
+
+  // 2. SEGUNDO: Actualizar integrantes
+  if (integrantes) {
+    // Eliminar integrantes existentes
+    await this.integranteRepo.delete({ marcador: { id } });
+
+    // Crear nuevos integrantes
+    const nuevosIntegrantes = integrantes.map((i) => {
+      const { salud: saludIntegrante, ...iData } = i;
+      return this.integranteRepo.create({
+        ...iData,
+        marcador: marcadorExistente, // Usar el marcador existente
+        salud: saludIntegrante?.map((s) => ({ ...s })) || [],
+      });
     });
 
-    // 2. Comparar y determinar cambios
-    const programasAMantener = [];
-    const programasAFinalizar = [];
-    const programasAAgregar = [];
+    // Guardar los nuevos integrantes
+    await this.integranteRepo.save(nuevosIntegrantes);
+  }
 
-    // Revisar programas existentes
-    for (const programaActivo of programasActivos) {
-      const existeEnNuevos = nuevosProgramas.some(nuevo => 
-        nuevo.tipo === programaActivo.tipo && nuevo.ayuda === programaActivo.ayuda
-      );
-      
-      if (existeEnNuevos) {
-        programasAMantener.push(programaActivo);
-      } else {
-        programasAFinalizar.push(programaActivo);
-      }
-    }
+  // 3. TERCERO: Actualizar campos simples del marcador
+  if (Object.keys(resto).length > 0) {
+    await this.marcadorRepo.update(id, resto);
+  }
 
-    // Revisar nuevos programas
-    for (const nuevoPrograma of nuevosProgramas) {
-      const existeEnActivos = programasActivos.some(activo => 
-        activo.tipo === nuevoPrograma.tipo && activo.ayuda === nuevoPrograma.ayuda
-      );
-      
-      if (!existeEnActivos) {
-        programasAAgregar.push(nuevoPrograma);
-      }
-    }
+  // 4. CUARTO: Actualizar relaciones simples (que se reemplazan completamente)
+  const relacionesAActualizar: any = {};
+  
+  if (estudios) relacionesAActualizar.estudios = estudios.map((e) => ({ ...e }));
+  if (ocupaciones) relacionesAActualizar.ocupaciones = ocupaciones.map((o) => ({ ...o }));
+  if (viviendas) relacionesAActualizar.viviendas = viviendas.map((v) => ({ ...v }));
+  if (servicios) relacionesAActualizar.servicios = servicios.map((s) => ({ ...s }));
+  if (salud) relacionesAActualizar.salud = salud.map((s) => ({ ...s }));
 
-    // 3. Aplicar cambios
-    // Finalizar programas que ya no están en la lista
+  if (Object.keys(relacionesAActualizar).length > 0) {
+    await this.marcadorRepo.save({
+      id,
+      ...relacionesAActualizar
+    });
+  }
+
+  // 5. FINALMENTE: Retornar el marcador actualizado con todas sus relaciones
+  return this.marcadorRepo.findOne({
+    where: { id },
+    relations: [
+      'integrantes',
+      'integrantes.salud',
+      'programas',
+      'estudios',
+      'ocupaciones',
+      'viviendas',
+      'servicios',
+      'salud',
+    ],
+  });
+}
+
+  // Resto del código de programas (ya lo tenés bien hecho)
+
+private async actualizarProgramasConHistorial(marcadorId: number, nuevosProgramas: Partial<Programa>[]) {
+  try {
+    // Obtener programas activos actuales
+    const programasActivos = await this.programaRepo.find({
+      where: { marcador: { id: marcadorId }, estado: 'activo' }
+    });
+
+    console.log('Programas activos actuales:', programasActivos.length);
+
+    // Identificar programas que deben finalizar
+    const programasAFinalizar = programasActivos.filter(
+      (p) => !nuevosProgramas.some(n => n.tipo === p.tipo && n.ayuda === p.ayuda)
+    );
+
+    // Identificar programas nuevos que deben agregarse
+    const programasAAgregar = nuevosProgramas.filter(
+      (n) => !programasActivos.some(p => p.tipo === n.tipo && p.ayuda === n.ayuda)
+    );
+
+    console.log('Programas a finalizar:', programasAFinalizar.length);
+    console.log('Programas a agregar:', programasAAgregar.length);
+
+    // Finalizar programas que ya no están en la nueva lista
     for (const programa of programasAFinalizar) {
       programa.estado = 'finalizado';
       programa.fechaFin = new Date();
       await this.programaRepo.save(programa);
+      console.log(`Programa finalizado: ${programa.tipo} - ${programa.ayuda}`);
     }
 
-    // Agregar nuevos programas
-    await this.agregarNuevosProgramas(marcadorId, programasAAgregar);
-  }
-
-  // NUEVO MÉTODO: Finaliza programas activos (no los elimina)
-  private async finalizarProgramasActivos(marcadorId: number) {
-    const programasActivos = await this.programaRepo.find({
-      where: { 
-        marcador: { id: marcadorId },
-        estado: 'activo'
-      }
-    });
-
-    for (const programa of programasActivos) {
-      programa.estado = 'finalizado';
-      programa.fechaFin = new Date();
-      await this.programaRepo.save(programa);
-    }
-  }
-
-  // NUEVO MÉTODO: Agrega nuevos programas
-  private async agregarNuevosProgramas(marcadorId: number, nuevosProgramas: Partial<Programa>[]) {
-    const marcadorCompleto = await this.marcadorRepo.findOne({ where: { id: marcadorId } });
-    
-    for (const programaData of nuevosProgramas) {
-      const nuevoPrograma = this.programaRepo.create({
-        ...programaData,
-        marcador: marcadorCompleto,
-        estado: 'activo',
-        fechaInicio: new Date(),
-      });
-      await this.programaRepo.save(nuevoPrograma);
-    }
-  }
-
-  // NUEVOS MÉTODOS ÚTILES PARA MANEJAR PROGRAMAS
-
-  // Obtener historial completo de programas de un marcador
-  async obtenerHistorialProgramas(marcadorId: number): Promise<Programa[]> {
-    return await this.programaRepo.find({
-      where: { marcador: { id: marcadorId } },
-      order: { fechaInicio: 'DESC' },
-    });
-  }
-
-  // Obtener solo programas activos de un marcador
-  async obtenerProgramasActivos(marcadorId: number): Promise<Programa[]> {
-    return await this.programaRepo.find({
-      where: { 
-        marcador: { id: marcadorId },
-        estado: 'activo'
-      },
-      order: { fechaInicio: 'DESC' },
-    });
-  }
-
-  // MÉTODOS ADICIONALES PARA MANEJO GRANULAR DE PROGRAMAS
-
-  // Agregar un programa específico sin tocar los demás
-  async agregarProgramaSolo(marcadorId: number, programaData: Partial<Programa>): Promise<Programa> {
+    // Obtener referencia del marcador para los nuevos programas
     const marcador = await this.marcadorRepo.findOne({ where: { id: marcadorId } });
     
     if (!marcador) {
-      throw new NotFoundException('Marcador no encontrado');
+      throw new Error('Marcador no encontrado para agregar programas');
     }
 
-    // Verificar que no exista ya un programa activo igual
-    const programaExistente = await this.programaRepo.findOne({
-      where: {
-        marcador: { id: marcadorId },
-        tipo: programaData.tipo,
-        ayuda: programaData.ayuda,
-        estado: 'activo'
-      }
-    });
-
-    if (programaExistente) {
-      throw new Error('Ya existe un programa activo con el mismo tipo y ayuda');
+    // Agregar nuevos programas
+    for (const programaData of programasAAgregar) {
+      const nuevoPrograma = this.programaRepo.create({
+        ...programaData,
+        marcador,
+        estado: 'activo',
+        fechaInicio: new Date(),
+      });
+      
+      const programaGuardado = await this.programaRepo.save(nuevoPrograma);
+      console.log(`Programa agregado: ${programaGuardado.tipo} - ${programaGuardado.ayuda}`);
     }
 
-    const nuevoPrograma = this.programaRepo.create({
-      ...programaData,
-      marcador,
-      estado: 'activo',
-      fechaInicio: new Date(),
-    });
-
-    return await this.programaRepo.save(nuevoPrograma);
-  }
-
-  // Eliminar (finalizar) un programa específico por tipo y ayuda
-  async eliminarProgramaEspecifico(marcadorId: number, tipo: string, ayuda: string): Promise<Programa | null> {
-    const programa = await this.programaRepo.findOne({
-      where: {
-        marcador: { id: marcadorId },
-        tipo,
-        ayuda,
-        estado: 'activo'
-      }
-    });
-
-    if (!programa) {
-      return null;
-    }
-
-    programa.estado = 'finalizado';
-    programa.fechaFin = new Date();
-
-    return await this.programaRepo.save(programa);
-  }
-
-  // Finalizar un programa específico
-  async finalizarPrograma(programaId: number): Promise<Programa> {
-    const programa = await this.programaRepo.findOne({ where: { id: programaId } });
+    console.log('Actualización de programas completada exitosamente');
     
-    if (!programa) {
-      throw new NotFoundException('Programa no encontrado');
-    }
-
-    programa.estado = 'finalizado';
-    programa.fechaFin = new Date();
-
-    return await this.programaRepo.save(programa);
+  } catch (error) {
+    console.error('Error actualizando programas con historial:', error);
+    throw new Error(`Error actualizando programas: ${error.message}`);
   }
+}
 
-  // Método original sin cambios
   remove(id: number) {
     return this.marcadorRepo.delete(id);
   }
