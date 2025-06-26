@@ -7,7 +7,7 @@ export class Ocupacion {
   id: number;
 
   @Column()
-  nombre: string;
+  tipo_principal: string;
 
   @Column()
   tipo_1: string;

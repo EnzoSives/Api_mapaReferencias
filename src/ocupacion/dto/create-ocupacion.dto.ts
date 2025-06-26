@@ -2,7 +2,7 @@ import { IsInt, IsString} from 'class-validator';
 
 export class CreateOcupacionDto {
   @IsString()
-  nombre: string;
+  tipo_principal: string;
 
   @IsString()
   tipo_1: string;
