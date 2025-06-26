@@ -9,6 +9,9 @@ export class CreateProgramaDto {
   @IsString()
   ayuda: string;
 
+  @IsString()
+  notas?: string; // Opcional, si se desea incluir notas
+
   @IsInt()
   @IsNotEmpty()
   marcadorId: number; // ID del marcador al que pertenece

@@ -13,6 +13,9 @@ export class Programa {
   @Column()
   ayuda: string;
 
+  @Column({ nullable: true })
+  notas: string;
+
   @Column({ default: 'activo' }) // 'activo', 'inactivo', 'finalizado', 'suspendido'
   estado: string;
 
@@ -35,10 +38,12 @@ export class Programa {
     ayuda: string,
     marcador: Marcador,
     estado?: string,
+    notas?: string
   ) {
     this.tipo = tipo;
     this.ayuda = ayuda;
     this.marcador = marcador;
     this.estado = estado || 'activo';
+    this.notas = notas || null;
   }
 }

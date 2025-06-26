@@ -156,15 +156,26 @@ private async actualizarProgramasConHistorial(marcadorId: number, nuevosPrograma
 
     console.log('Programas activos actuales:', programasActivos.length);
 
-    // Identificar programas que deben finalizar
     const programasAFinalizar = programasActivos.filter(
-      (p) => !nuevosProgramas.some(n => n.tipo === p.tipo && n.ayuda === p.ayuda)
-    );
+  (p) =>
+    !nuevosProgramas.some(
+      (n) =>
+        n.tipo === p.tipo &&
+        n.ayuda === p.ayuda &&
+        (n.notas || '') === (p.notas || '')
+    )
+);
 
-    // Identificar programas nuevos que deben agregarse
-    const programasAAgregar = nuevosProgramas.filter(
-      (n) => !programasActivos.some(p => p.tipo === n.tipo && p.ayuda === n.ayuda)
-    );
+const programasAAgregar = nuevosProgramas.filter(
+  (n) =>
+    !programasActivos.some(
+      (p) =>
+        n.tipo === p.tipo &&
+        n.ayuda === p.ayuda &&
+        (n.notas || '') === (p.notas || '')
+    )
+);
+
 
     console.log('Programas a finalizar:', programasAFinalizar.length);
     console.log('Programas a agregar:', programasAAgregar.length);

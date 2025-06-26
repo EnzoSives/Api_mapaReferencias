@@ -9,6 +9,8 @@ export class CreateMarcadorDto {
   telefono: string;
   dni: string;
   notas?: string;
+  barrio: string;
+  tiempo_residencia: string;
   ayudas?: string[];
   latitud: number;
   longitud: number;

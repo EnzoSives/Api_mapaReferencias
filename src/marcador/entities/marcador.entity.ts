@@ -34,6 +34,12 @@ export class Marcador {
   dni: string;
 
   @Column({ nullable: true })
+  barrio: string;
+
+  @Column({ nullable: true })
+  tiempo_residencia: string;
+
+  @Column({ nullable: true })
   notas: string;
 
   @Column('double')
@@ -89,6 +95,8 @@ export class Marcador {
     direccion: string,
     telefono: string,
     dni: string,
+    barrio: string,
+    tiempo_residencia: string,
     latitud: number,
     longitud: number,
     icono: string,
@@ -99,6 +107,8 @@ export class Marcador {
     this.direccion = direccion;
     this.telefono = telefono;
     this.dni = dni;
+    this.barrio = barrio;
+    this.tiempo_residencia = tiempo_residencia;
     this.latitud = latitud;
     this.longitud = longitud;
     this.icono = icono;
