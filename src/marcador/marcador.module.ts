@@ -10,10 +10,13 @@ import { Ocupacion } from '../ocupacion/entities/ocupacion.entity';
 import { Vivienda } from '../vivienda/entities/vivienda.entity';
 import { Servicio } from '../servicio/entities/servicio.entity';
 import { Salud } from '../salud/entities/salud.entity';
+import { MarcadorSubscriber } from './subscribers/marcador.subscriber';
+import { MarcadorHistorial } from './entities/marcador-historial.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Marcador, IntegranteFamilia, Programa, Estudio, Ocupacion, Vivienda, Servicio, Salud])],
+  imports: [TypeOrmModule.forFeature([Marcador,MarcadorHistorial, IntegranteFamilia, Programa, Estudio, Ocupacion, Vivienda, Servicio, Salud])],
   controllers: [MarcadorController],
-  providers: [MarcadorService],
+  providers: [MarcadorService, MarcadorSubscriber],
+  exports: [MarcadorService],
 })
 export class MarcadorModule {}
