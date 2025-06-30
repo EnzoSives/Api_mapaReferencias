@@ -247,10 +247,16 @@ export class MarcadorService {
     }
   }
 
-  remove(id: number) {
-    // El subscriber se encargará automáticamente de crear el historial antes de eliminar
-    return this.marcadorRepo.delete(id);
-  }
+async remove(id: number) {
+  // Eliminar registros relacionados manualmente
+  await this.integranteRepo.delete({ marcador: { id } });
+  await this.programaRepo.delete({ marcador: { id } });
+  // Agregá otras entidades si es necesario, como estudios, ocupaciones, salud, etc.
+
+  // Finalmente eliminá el marcador
+  return this.marcadorRepo.delete(id);
+}
+
 
   // Métodos nuevos para gestionar el historial
   async getHistorial(marcadorId: number): Promise<MarcadorHistorial[]> {

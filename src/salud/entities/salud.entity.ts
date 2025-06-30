@@ -17,7 +17,7 @@ export class Salud {
   problema_salud: string;
 
   @ManyToOne(() => Marcador, (marcador) => marcador.salud, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   marcador: Marcador;
