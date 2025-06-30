@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Marcador } from '../../marcador/entities/marcador.entity';
+import { IntegranteFamilia } from 'src/integrante_familiar/entities/integrante_familiar.entity';
 
 @Entity()
 export class Ocupacion {
@@ -23,4 +24,10 @@ export class Ocupacion {
     onUpdate: 'CASCADE',
   })
   marcador: Marcador;
+
+  @ManyToOne(() => IntegranteFamilia, (integrante) => integrante.ocupaciones, {
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+  })
+  integrante: IntegranteFamilia;
 }

@@ -6,6 +6,7 @@ import { CreateIntegranteFamiliaDto } from '../integrante_familiar/dto/create-in
 import { UpdateIntegranteFamiliarDto } from '../integrante_familiar/dto/update-integrante_familiar.dto';
 import { Marcador } from '../marcador/entities/marcador.entity';
 import { Salud } from 'src/salud/entities/salud.entity';
+import { Ocupacion } from 'src/ocupacion/entities/ocupacion.entity';
 
 @Injectable()
 export class IntegranteFamiliaService {
@@ -17,17 +18,20 @@ export class IntegranteFamiliaService {
     private readonly marcadorRepo: Repository<Marcador>,
     @InjectRepository(Salud)
     private readonly saludRepo: Repository<Salud>,
+    @InjectRepository(Ocupacion)
+    private readonly ocupacionRepo: Repository<Ocupacion>,
   ) {}
 
   async create(dto: CreateIntegranteFamiliaDto): Promise<IntegranteFamilia> {
   const marcador = await this.marcadorRepo.findOneBy({ id: dto.marcadorId });
   if (!marcador) throw new NotFoundException('Marcador no encontrado');
 
-  const { salud, ...resto } = dto;
+  const { salud,ocupaciones,  ...resto } = dto;
   const integrante = this.integranteRepo.create({
     ...resto,
     marcador,
     salud: salud?.map((s) => ({ ...s })) || [],
+    ocupaciones: ocupaciones?.map((o) => ({ ...o })) || [],
   });
 
   return this.integranteRepo.save(integrante);
@@ -36,14 +40,14 @@ export class IntegranteFamiliaService {
 
   findAll(): Promise<IntegranteFamilia[]> {
   return this.integranteRepo.find({
-    relations: ['marcador', 'salud'], // 👈 agregado
+    relations: ['marcador', 'salud', 'ocupaciones'], // 👈 agregado
   });
 }
 
 findOne(id: number): Promise<IntegranteFamilia> {
   return this.integranteRepo.findOne({
     where: { id },
-    relations: ['marcador', 'salud'], // 👈 agregado
+    relations: ['marcador', 'salud', 'ocupaciones'], // 👈 agregado
   });
 }
 
@@ -53,17 +57,20 @@ async update(
 ): Promise<IntegranteFamilia> {
   const integrante = await this.integranteRepo.findOne({
     where: { id },
-    relations: ['salud'], // 👈 importante
+    relations: ['salud', 'ocupaciones'], // 👈 importante
   });
 
   if (!integrante) throw new NotFoundException('Integrante no encontrado');
 
-  const { salud, ...resto } = dto;
+  const { salud, ocupaciones, ...resto } = dto;
   Object.assign(integrante, resto);
 
   if (salud) {
     integrante.salud = salud.map((s) => this.saludRepo.create(s));
 
+  }
+  if (ocupaciones) {
+    integrante.ocupaciones = ocupaciones.map((o) => this.ocupacionRepo.create(o));
   }
 
   return this.integranteRepo.save(integrante);

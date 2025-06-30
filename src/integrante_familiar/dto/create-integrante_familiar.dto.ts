@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsString, IsInt } from 'class-validator';
+import { CreateOcupacionDto } from 'src/ocupacion/dto/create-ocupacion.dto';
 import { CreateSaludDto } from 'src/salud/dto/create-salud.dto';
 
 export class CreateIntegranteFamiliaDto {
@@ -22,6 +23,8 @@ export class CreateIntegranteFamiliaDto {
   vinculo: string;
 
   salud?: CreateSaludDto[];
+
+  ocupaciones?: CreateOcupacionDto[];
 
   @IsInt()
   @IsNotEmpty()

@@ -14,6 +14,9 @@ export class CreateOcupacionDto {
   ingresos: number;
 
   @IsInt()
+  integranteId: number;
+
+  @IsInt()
   marcadorId: number;
 
 }

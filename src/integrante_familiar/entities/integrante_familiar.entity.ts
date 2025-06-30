@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
 import { Marcador } from '../../marcador/entities/marcador.entity'; // Asegúrate que la ruta sea correcta
 import { Salud } from 'src/salud/entities/salud.entity';
+import { Ocupacion } from 'src/ocupacion/entities/ocupacion.entity';
 
 @Entity()
 export class IntegranteFamilia {
@@ -31,5 +32,13 @@ export class IntegranteFamilia {
   onDelete: 'CASCADE',
 })
 salud: Salud[];
+
+@OneToMany(() => Ocupacion, (ocupacion) => ocupacion.integrante, {
+  cascade: true,
+  eager: true,
+  onDelete: 'CASCADE',
+})
+ocupaciones: Ocupacion[]; // <- renombrado a plural
+
 
 }
