@@ -13,7 +13,7 @@ export class Programa {
   @Column()
   ayuda: string;
 
-  @Column()
+  @Column({ nullable: true })
   detalle: string;
 
   @Column({ nullable: true })
