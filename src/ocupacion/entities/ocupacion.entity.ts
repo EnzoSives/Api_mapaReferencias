@@ -16,7 +16,7 @@ export class Ocupacion {
   @Column()
   tipo_2: string;
 
-  @Column()
+  @Column({nullable: true})
   ingresos: number;
 
   @ManyToOne(() => Marcador, (marcador) => marcador.ocupaciones, {
