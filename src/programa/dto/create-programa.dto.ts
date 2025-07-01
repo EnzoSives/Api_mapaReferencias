@@ -10,6 +10,9 @@ export class CreateProgramaDto {
   ayuda: string;
 
   @IsString()
+  detalle: string;
+
+  @IsString()
   notas?: string; // Opcional, si se desea incluir notas
 
   @IsInt()

@@ -10,10 +10,10 @@ export class Ocupacion {
   @Column()
   tipo_principal: string;
 
-  @Column()
+  @Column({nullable: true})
   tipo_1: string;
 
-  @Column()
+  @Column({nullable: true})
   tipo_2: string;
 
   @Column({nullable: true})

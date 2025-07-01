@@ -13,6 +13,9 @@ export class Programa {
   @Column()
   ayuda: string;
 
+  @Column()
+  detalle: string;
+
   @Column({ nullable: true })
   notas: string;
 
@@ -36,12 +39,14 @@ export class Programa {
   constructor(
     tipo: string,
     ayuda: string,
+    detalle: string,
     marcador: Marcador,
     estado?: string,
     notas?: string
   ) {
     this.tipo = tipo;
     this.ayuda = ayuda;
+    this.detalle = detalle;
     this.marcador = marcador;
     this.estado = estado || 'activo';
     this.notas = notas || null;
