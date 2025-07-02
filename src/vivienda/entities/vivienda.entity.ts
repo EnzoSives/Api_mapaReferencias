@@ -22,7 +22,7 @@ export class Vivienda {
   baño_opcion: string;
 
   @ManyToOne(() => Marcador, (marcador) => marcador.viviendas, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   marcador: Marcador;
