@@ -13,7 +13,7 @@ export class Servicio {
   opcion_servicio: string;
 
   @ManyToOne(() => Marcador, (marcador) => marcador.servicios, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   marcador: Marcador;
