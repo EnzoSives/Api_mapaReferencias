@@ -19,11 +19,12 @@ export class Ocupacion {
   @Column({nullable: true})
   ingresos: number;
 
-  @ManyToOne(() => Marcador, (marcador) => marcador.ocupaciones, {
-    onDelete: 'RESTRICT',
-    onUpdate: 'CASCADE',
-  })
-  marcador: Marcador;
+ @ManyToOne(() => Marcador, (marcador) => marcador.ocupaciones, {
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+})
+marcador: Marcador;
+
 
   @ManyToOne(() => IntegranteFamilia, (integrante) => integrante.ocupaciones, {
     onDelete: 'CASCADE',
