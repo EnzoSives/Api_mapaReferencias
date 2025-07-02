@@ -10,7 +10,7 @@ export class Estudio {
   nivel: string;
 
   @ManyToOne(() => Marcador, (marcador) => marcador.estudios, {
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   })
   marcador: Marcador;
