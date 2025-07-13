@@ -19,6 +19,12 @@ export class Programa {
   @Column({ nullable: true })
   notas: string;
 
+  @Column({ nullable: true })
+  mes: string; // 'enero', 'febrero', 'marzo', etc.
+
+  @Column({ nullable: true })
+  cantidad: number; // '1', '2', '3', etc. (cantidad de personas beneficiarias)
+
   @Column({ default: 'activo' }) // 'activo', 'inactivo', 'finalizado', 'suspendido'
   estado: string;
 
