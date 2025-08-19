@@ -48,7 +48,9 @@ export class Programa {
     detalle: string,
     marcador: Marcador,
     estado?: string,
-    notas?: string
+    notas?: string,
+    mes?: string,
+    cantidad?: number
   ) {
     this.tipo = tipo;
     this.ayuda = ayuda;
@@ -56,5 +58,7 @@ export class Programa {
     this.marcador = marcador;
     this.estado = estado || 'activo';
     this.notas = notas || null;
+    this.mes = mes || null;
+    this.cantidad = cantidad || null;
   }
 }

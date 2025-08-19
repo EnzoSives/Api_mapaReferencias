@@ -19,7 +19,7 @@ export class CreateProgramaDto {
   mes?: string; // Opcional, 'enero', 'febrero', 'marzo', etc.
 
   @IsInt()
-  cantidad: number; // '1', '2', '3', etc. (cantidad de personas beneficiarias)
+  cantidad?: number; // '1', '2', '3', etc. (cantidad de personas beneficiarias)
 
   @IsInt()
   @IsNotEmpty()
