@@ -180,72 +180,48 @@ export class MarcadorService {
   }
 
   private async actualizarProgramasConHistorial(marcadorId: number, nuevosProgramas: Partial<Programa>[]) {
-    try {
-      // Obtener programas activos actuales
-      const programasActivos = await this.programaRepo.find({
-        where: { marcador: { id: marcadorId }, estado: 'activo' }
-      });
+  try {
+    const programasActuales = await this.programaRepo.find({
+      where: { marcador: { id: marcadorId } },
+    });
 
-      console.log('Programas activos actuales:', programasActivos.length);
+    const programasNuevosConId = nuevosProgramas.filter(p => p.id);
+    const programasNuevosSinId = nuevosProgramas.filter(p => !p.id);
+    const idsDeProgramasNuevos = programasNuevosConId.map(p => p.id);
 
-      const programasAFinalizar = programasActivos.filter(
-        (p) =>
-          !nuevosProgramas.some(
-            (n) =>
-              n.tipo === p.tipo &&
-              n.ayuda === p.ayuda &&
-              (n.notas || '') === (p.notas || '')
-          )
-      );
-
-      const programasAAgregar = nuevosProgramas.filter(
-        (n) =>
-          !programasActivos.some(
-            (p) =>
-              n.tipo === p.tipo &&
-              n.ayuda === p.ayuda &&
-              (n.notas || '') === (p.notas || '')
-          )
-      );
-
-      console.log('Programas a finalizar:', programasAFinalizar.length);
-      console.log('Programas a agregar:', programasAAgregar.length);
-
-      // Finalizar programas que ya no están en la nueva lista
-      for (const programa of programasAFinalizar) {
-        programa.estado = 'finalizado';
-        programa.fechaFin = new Date();
-        await this.programaRepo.save(programa);
-        console.log(`Programa finalizado: ${programa.tipo} - ${programa.ayuda}`);
-      }
-
-      // Obtener referencia del marcador para los nuevos programas
-      const marcador = await this.marcadorRepo.findOne({ where: { id: marcadorId } });
-      
-      if (!marcador) {
-        throw new Error('Marcador no encontrado para agregar programas');
-      }
-
-      // Agregar nuevos programas
-      for (const programaData of programasAAgregar) {
-        const nuevoPrograma = this.programaRepo.create({
-          ...programaData,
-          marcador,
-          estado: 'activo',
-          fechaInicio: new Date(),
-        });
-        
-        const programaGuardado = await this.programaRepo.save(nuevoPrograma);
-        console.log(`Programa agregado: ${programaGuardado.tipo} - ${programaGuardado.ayuda}`);
-      }
-
-      console.log('Actualización de programas completada exitosamente');
-      
-    } catch (error) {
-      console.error('Error actualizando programas con historial:', error);
-      throw new Error(`Error actualizando programas: ${error.message}`);
+    // 1. Actualizar programas existentes
+    for (const programa of programasNuevosConId) {
+      await this.programaRepo.update(programa.id, programa);
     }
+
+    // 2. Eliminar programas que ya no existen
+    const programasAEliminar = programasActuales.filter(
+      p => !idsDeProgramasNuevos.includes(p.id)
+    );
+    for (const programa of programasAEliminar) {
+      await this.programaRepo.remove(programa);
+    }
+
+    // 3. Agregar nuevos programas
+    const marcador = await this.marcadorRepo.findOne({ where: { id: marcadorId } });
+    if (!marcador) {
+      throw new Error('Marcador no encontrado para agregar programas');
+    }
+    for (const programaData of programasNuevosSinId) {
+      const nuevoPrograma = this.programaRepo.create({
+        ...programaData,
+        marcador,
+        estado: 'activo',
+        fechaInicio: new Date(),
+      });
+      await this.programaRepo.save(nuevoPrograma);
+    }
+
+  } catch (error) {
+    console.error('Error actualizando programas con historial:', error);
+    throw new Error(`Error actualizando programas: ${error.message}`);
   }
+}
 
 async remove(id: number) {
   // Eliminar registros relacionados manualmente

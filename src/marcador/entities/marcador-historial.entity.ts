@@ -1,3 +1,4 @@
+// src/marcador/entities/marcador-historial.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -34,7 +35,7 @@ export class MarcadorHistorial {
   @Column({ nullable: true })
   tiempo_residencia: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   notas: string;
 
   @Column('double')
@@ -56,26 +57,26 @@ export class MarcadorHistorial {
   tipo_operacion: string; // UPDATE, DELETE
 
   // Campos para guardar snapshot de relaciones (como JSON)
-  @Column({ type: 'json', nullable: true })
-  integrantes_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  integrantes_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  programas_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  programas_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  estudios_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  estudios_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  ocupaciones_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  ocupaciones_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  viviendas_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  viviendas_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  servicios_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  servicios_snapshot: string;
 
-  @Column({ type: 'json', nullable: true })
-  salud_snapshot: any[];
+  @Column({ type: 'mediumtext', nullable: true })
+  salud_snapshot: string;
 
   constructor(marcador: any) {
     if (marcador) {
@@ -93,14 +94,14 @@ export class MarcadorHistorial {
       this.icono = marcador.icono;
       this.fecha_creacion_original = marcador.fechaCreacion;
       
-      // Guardar snapshots de relaciones
-      this.integrantes_snapshot = marcador.integrantes || [];
-      this.programas_snapshot = marcador.programas || [];
-      this.estudios_snapshot = marcador.estudios || [];
-      this.ocupaciones_snapshot = marcador.ocupaciones || [];
-      this.viviendas_snapshot = marcador.viviendas || [];
-      this.servicios_snapshot = marcador.servicios || [];
-      this.salud_snapshot = marcador.salud || [];
+      // Guardar snapshots de relaciones como strings JSON
+      this.integrantes_snapshot = JSON.stringify(marcador.integrantes || []);
+      this.programas_snapshot = JSON.stringify(marcador.programas || []);
+      this.estudios_snapshot = JSON.stringify(marcador.estudios || []);
+      this.ocupaciones_snapshot = JSON.stringify(marcador.ocupaciones || []);
+      this.viviendas_snapshot = JSON.stringify(marcador.viviendas || []);
+      this.servicios_snapshot = JSON.stringify(marcador.servicios || []);
+      this.salud_snapshot = JSON.stringify(marcador.salud || []);
     }
   }
 }

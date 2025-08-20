@@ -1,8 +1,12 @@
 // src/programa/dto/create-programa.dto.ts
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 
 export class CreateProgramaDto {
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
   @IsString()
   tipo: string;
 
