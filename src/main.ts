@@ -6,8 +6,7 @@ async function bootstrap() {
 
   // Configurar CORS para permitir cualquier origen
   app.enableCors({
-    // origin: 'http://localhost:9000', // Permite cualquier dominio
-    origin: 'http://179.43.127.133:9001', // Permite cualquier dominio
+    origin: ['http://179.43.127.133:9001','http://179.43.127.133:9002','http://localhost:9000'], // Permite cualquier dominio
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Métodos HTTP permitidos
     credentials: true, // Permite el envío de credenciales (cookies, cabeceras de autorización, etc.)
   });
