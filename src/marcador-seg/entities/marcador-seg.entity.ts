@@ -31,4 +31,7 @@ export class MarcadorSeg {
 
   @Column()
   icono: string;
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  fechaCreacion: Date;  
 }

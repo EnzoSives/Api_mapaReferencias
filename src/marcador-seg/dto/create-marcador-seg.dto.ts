@@ -8,4 +8,5 @@ export class CreateMarcadorSegDto {
   latitud: number;
   longitud: number;
   icono: string;
+  fechaCreacion: Date;
 }
