@@ -1,3 +1,5 @@
+// En tu archivo src/marcador-seg/entities/marcador-seg.entity.ts
+
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity()
@@ -33,5 +35,5 @@ export class MarcadorSeg {
   icono: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fechaCreacion: Date;  
+  fecha_creacion: Date;
 }
