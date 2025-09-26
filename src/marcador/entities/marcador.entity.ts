@@ -39,7 +39,7 @@ export class Marcador {
   @Column({ nullable: true })
   tiempo_residencia: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   notas: string;
 
   @Column('double')

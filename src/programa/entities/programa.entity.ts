@@ -16,7 +16,7 @@ export class Programa {
   @Column({ nullable: true })
   detalle: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 1000, nullable: true })
   notas: string;
 
   @Column({ nullable: true })

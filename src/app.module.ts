@@ -14,7 +14,7 @@ import { OcupacionModule } from './ocupacion/ocupacion.module';
 import { ViviendaModule } from './vivienda/vivienda.module';
 import { ServicioModule } from './servicio/servicio.module';
 import { SaludModule } from './salud/salud.module';
-import { MarcadorSegModule } from './marcador-seg/marcador-seg.module';
+import { MarcadorSegModule } from './seguridad/marcador-seg/marcador-seg.module';
 
 
 @Module({

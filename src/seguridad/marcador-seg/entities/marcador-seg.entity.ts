@@ -1,6 +1,7 @@
 // En tu archivo src/marcador-seg/entities/marcador-seg.entity.ts
 
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Delito } from '../../delito/entities/delito.entity';
 
 @Entity()
 export class MarcadorSeg {
@@ -36,4 +37,15 @@ export class MarcadorSeg {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fecha_creacion: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_inicio: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_fin: Date;
+
+  @OneToMany(() => Delito, (delito) => delito.marcadorSeg, {
+    cascade: true,
+  })
+  delitos: Delito[];
 }
