@@ -25,7 +25,7 @@ import { MarcadorSegModule } from './seguridad/marcador-seg/marcador-seg.module'
       port: 3306,
       username: 'insp_pruebas',
       password: '%#zn7ajqx0qrljLr',
-      database: 'mapa-referencias',
+      database: 'mapa-referencias_pruebas',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

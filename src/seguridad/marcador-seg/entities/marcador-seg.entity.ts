@@ -8,31 +8,31 @@ export class MarcadorSeg {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({nullable: true})
   nombre: string;
 
-  @Column()
+  @Column({nullable: true})
   apellido: string;
 
-  @Column()
+  @Column({nullable: true})
   direccion: string;
 
-  @Column()
+  @Column({nullable: true})
   telefono: string;
 
-  @Column()
+  @Column({nullable: true})
   dni: string;
 
   @Column({ nullable: true })
   notas?: string;
 
-  @Column('double')
+  @Column('double', { nullable: true })
   latitud: number;
 
-  @Column('double')
+  @Column('double', { nullable: true })
   longitud: number;
 
-  @Column()
+  @Column({nullable: true})
   icono: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
