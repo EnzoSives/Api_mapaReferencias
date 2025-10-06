@@ -1,4 +1,4 @@
-// En tu archivo src/marcador-seg/entities/marcador-seg.entity.ts
+// src/seguridad/marcador-seg/entities/marcador-seg.entity.ts
 
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Delito } from '../../delito/entities/delito.entity';
@@ -43,6 +43,15 @@ export class MarcadorSeg {
 
   @Column({ type: 'timestamp', nullable: true })
   fecha_fin: Date;
+
+  @Column({ nullable: true })
+  numero_denuncia: string;
+
+  @Column({ nullable: true })
+  fiscal: string;
+
+  @Column({ nullable: true })
+  barrio: string;
 
   @OneToMany(() => Delito, (delito) => delito.marcadorSeg, {
     cascade: true,

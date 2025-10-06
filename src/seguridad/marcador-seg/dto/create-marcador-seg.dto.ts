@@ -13,4 +13,7 @@ export class CreateMarcadorSegDto {
   icono: string;
   fechaCreacion: Date;
   delitos?: CreateDelitoDto[];
+  numero_denuncia?: string;
+  fiscal?: string;
+  barrio?: string;
 }
