@@ -12,9 +12,10 @@ import { Servicio } from '../servicio/entities/servicio.entity';
 import { Salud } from '../salud/entities/salud.entity';
 import { MarcadorSubscriber } from './subscribers/marcador.subscriber';
 import { MarcadorHistorial } from './entities/marcador-historial.entity';
+import { MarcadorAnual } from './entities/marcador-anual.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Marcador,MarcadorHistorial, IntegranteFamilia, Programa, Estudio, Ocupacion, Vivienda, Servicio, Salud])],
+  imports: [TypeOrmModule.forFeature([Marcador, MarcadorHistorial, MarcadorAnual, IntegranteFamilia, Programa, Estudio, Ocupacion, Vivienda, Servicio, Salud])],
   controllers: [MarcadorController],
   providers: [MarcadorService, MarcadorSubscriber],
   exports: [MarcadorService],

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Marcador } from './entities/marcador.entity';
 import { MarcadorHistorial } from './entities/marcador-historial.entity';
+import { MarcadorAnual } from './entities/marcador-anual.entity';
 import { IntegranteFamilia } from '../integrante_familiar/entities/integrante_familiar.entity';
 import { Programa } from '../programa/entities/programa.entity';
 
@@ -14,6 +15,9 @@ export class MarcadorService {
 
     @InjectRepository(MarcadorHistorial)
     private marcadorHistorialRepo: Repository<MarcadorHistorial>,
+
+    @InjectRepository(MarcadorAnual)
+    private marcadorAnualRepo: Repository<MarcadorAnual>,
 
     @InjectRepository(IntegranteFamilia)
     private integranteRepo: Repository<IntegranteFamilia>,
@@ -81,6 +85,65 @@ export class MarcadorService {
     }
   }
 
+  // Crea automáticamente un snapshot anual del año anterior si todavía no existe,
+  // preservando el estado pre-update del marcador.
+  private async autoSnapshotAnual(marcadorId: number, marcadorConRelaciones: any) {
+    const anioActual = new Date().getFullYear();
+    const anioCierre = anioActual - 1;
+
+    // Solo aplica si el marcador fue creado antes del año actual
+    const anioCreacion = new Date(marcadorConRelaciones.fechaCreacion).getFullYear();
+    if (anioCreacion >= anioActual) return;
+
+    // Verificar si ya existe snapshot para el año anterior
+    const yaExiste = await this.marcadorAnualRepo.findOne({
+      where: { marcador_id: marcadorId, anio: anioCierre },
+    });
+    if (yaExiste) return;
+
+    // Cargar con todas las relaciones necesarias para el snapshot
+    const marcadorCompleto = await this.marcadorRepo.findOne({
+      where: { id: marcadorId },
+      relations: [
+        'integrantes',
+        'integrantes.salud',
+        'programas',
+        'estudios',
+        'ocupaciones',
+        'viviendas',
+        'servicios',
+        'salud',
+      ],
+    });
+
+    const snapshot = this.marcadorAnualRepo.create({
+      marcador_id: marcadorId,
+      marcador: marcadorCompleto,
+      anio: anioCierre,
+      nombre: marcadorCompleto.nombre,
+      apellido: marcadorCompleto.apellido,
+      direccion: marcadorCompleto.direccion,
+      telefono: marcadorCompleto.telefono,
+      dni: marcadorCompleto.dni,
+      barrio: marcadorCompleto.barrio,
+      tiempo_residencia: marcadorCompleto.tiempo_residencia,
+      notas: marcadorCompleto.notas,
+      latitud: marcadorCompleto.latitud,
+      longitud: marcadorCompleto.longitud,
+      icono: marcadorCompleto.icono,
+      integrantes_snapshot: marcadorCompleto.integrantes || [],
+      programas_snapshot: marcadorCompleto.programas || [],
+      estudios_snapshot: marcadorCompleto.estudios || [],
+      ocupaciones_snapshot: marcadorCompleto.ocupaciones || [],
+      viviendas_snapshot: marcadorCompleto.viviendas || [],
+      servicios_snapshot: marcadorCompleto.servicios || [],
+      salud_snapshot: marcadorCompleto.salud || [],
+      fechaCierre: new Date(),
+    });
+
+    await this.marcadorAnualRepo.save(snapshot);
+  }
+
   async update(id: number, data: Partial<Marcador>) {
     // Primero verificar que el marcador existe
     const marcadorExistente = await this.marcadorRepo.findOne({
@@ -99,6 +162,10 @@ export class MarcadorService {
     if (!marcadorExistente) {
       throw new NotFoundException('Marcador no encontrado');
     }
+
+    // Auto-snapshot anual: si el marcador fue creado antes del año actual y no existe
+    // snapshot del año anterior, guardar el estado actual como snapshot de ese año.
+    await this.autoSnapshotAnual(id, marcadorExistente);
 
     const {
       integrantes,
@@ -219,7 +286,7 @@ export class MarcadorService {
 
   } catch (error) {
     console.error('Error actualizando programas con historial:', error);
-    throw new Error(`Error actualizando programas: ${error.message}`);
+    throw new Error(`Error actualizando programas`);
   }
 }
 
@@ -294,5 +361,311 @@ async remove(id: number) {
     }
 
     return { version1, version2, diferencias };
+  }
+
+  // ==================== MÉTODOS PARA HISTORIAL ANUAL ====================
+
+  /**
+   * Devuelve todos los marcadores con los datos correspondientes al año pedido.
+   * - Si anio >= año actual → datos vivos
+   * - Si hay snapshot con anio <= anio pedido → usa el snapshot más reciente disponible
+   * - Si no hay ningún snapshot → usa datos vivos (nunca fue modificado)
+   */
+  async findAllByAnio(anio: number): Promise<any[]> {
+    const anioActual = new Date().getFullYear();
+
+    // Traer todos los marcadores con sus relaciones (datos vivos)
+    const marcadores = await this.marcadorRepo.find({
+      relations: [
+        'integrantes',
+        'integrantes.salud',
+        'programas',
+        'estudios',
+        'ocupaciones',
+        'viviendas',
+        'servicios',
+        'salud',
+      ],
+    });
+
+    // Si piden el año actual o futuro, devolver datos vivos directamente
+    if (anio >= anioActual) {
+      return marcadores.map((m) => ({
+        ...m,
+        anio_dato: anioActual,
+        esDatoVivo: true,
+      }));
+    }
+
+    // Para años pasados, buscar el snapshot más cercano sin pasarse del año pedido
+    const snapshots = await this.marcadorAnualRepo
+      .createQueryBuilder('a')
+      .where('a.anio <= :anio', { anio })
+      .orderBy('a.anio', 'DESC')
+      .getMany();
+
+    // Indexar por marcador_id → snapshot más reciente (≤ anio)
+    const snapshotPorMarcador = new Map<number, MarcadorAnual>();
+    for (const snap of snapshots) {
+      if (!snapshotPorMarcador.has(snap.marcador_id)) {
+        snapshotPorMarcador.set(snap.marcador_id, snap);
+      }
+    }
+
+    return marcadores.map((m) => {
+      const snap = snapshotPorMarcador.get(m.id);
+
+      if (!snap) {
+        // Sin snapshot → usar datos vivos (marcador nunca fue modificado)
+        return {
+          ...m,
+          anio_dato: anioActual,
+          esDatoVivo: true,
+        };
+      }
+
+      return {
+        id: m.id,
+        anio_dato: snap.anio,
+        esDatoVivo: false,
+        nombre: snap.nombre,
+        apellido: snap.apellido,
+        direccion: snap.direccion,
+        telefono: snap.telefono,
+        dni: snap.dni,
+        barrio: snap.barrio,
+        tiempo_residencia: snap.tiempo_residencia,
+        notas: snap.notas,
+        latitud: snap.latitud,
+        longitud: snap.longitud,
+        icono: snap.icono,
+        integrantes: snap.integrantes_snapshot,
+        programas: snap.programas_snapshot,
+        estudios: snap.estudios_snapshot,
+        ocupaciones: snap.ocupaciones_snapshot,
+        viviendas: snap.viviendas_snapshot,
+        servicios: snap.servicios_snapshot,
+        salud: snap.salud_snapshot,
+        fechaCreacion: m.fechaCreacion,
+      };
+    });
+  }
+
+  /**
+   * Congela los datos actuales de un marcador para un año específico.
+   * Si ya existe un registro para ese año, lo actualiza.
+   */
+  async cerrarAnio(marcadorId: number, anio: number): Promise<MarcadorAnual> {
+    const marcador = await this.marcadorRepo.findOne({
+      where: { id: marcadorId },
+      relations: [
+        'integrantes',
+        'integrantes.salud',
+        'programas',
+        'estudios',
+        'ocupaciones',
+        'viviendas',
+        'servicios',
+        'salud',
+      ],
+    });
+
+    if (!marcador) {
+      throw new NotFoundException('Marcador no encontrado');
+    }
+
+    // Verificar si ya existe un registro para ese año
+    let registroAnual = await this.marcadorAnualRepo.findOne({
+      where: { marcador_id: marcadorId, anio },
+    });
+
+    if (registroAnual) {
+      // Actualizar el snapshot existente
+      registroAnual.nombre = marcador.nombre;
+      registroAnual.apellido = marcador.apellido;
+      registroAnual.direccion = marcador.direccion;
+      registroAnual.telefono = marcador.telefono;
+      registroAnual.dni = marcador.dni;
+      registroAnual.barrio = marcador.barrio;
+      registroAnual.tiempo_residencia = marcador.tiempo_residencia;
+      registroAnual.notas = marcador.notas;
+      registroAnual.latitud = marcador.latitud;
+      registroAnual.longitud = marcador.longitud;
+      registroAnual.icono = marcador.icono;
+      registroAnual.integrantes_snapshot = marcador.integrantes || [];
+      registroAnual.programas_snapshot = marcador.programas || [];
+      registroAnual.estudios_snapshot = marcador.estudios || [];
+      registroAnual.ocupaciones_snapshot = marcador.ocupaciones || [];
+      registroAnual.viviendas_snapshot = marcador.viviendas || [];
+      registroAnual.servicios_snapshot = marcador.servicios || [];
+      registroAnual.salud_snapshot = marcador.salud || [];
+      registroAnual.fechaCierre = new Date();
+    } else {
+      // Crear nuevo registro anual
+      registroAnual = this.marcadorAnualRepo.create({
+        marcador_id: marcadorId,
+        marcador: marcador,
+        anio,
+        nombre: marcador.nombre,
+        apellido: marcador.apellido,
+        direccion: marcador.direccion,
+        telefono: marcador.telefono,
+        dni: marcador.dni,
+        barrio: marcador.barrio,
+        tiempo_residencia: marcador.tiempo_residencia,
+        notas: marcador.notas,
+        latitud: marcador.latitud,
+        longitud: marcador.longitud,
+        icono: marcador.icono,
+        integrantes_snapshot: marcador.integrantes || [],
+        programas_snapshot: marcador.programas || [],
+        estudios_snapshot: marcador.estudios || [],
+        ocupaciones_snapshot: marcador.ocupaciones || [],
+        viviendas_snapshot: marcador.viviendas || [],
+        servicios_snapshot: marcador.servicios || [],
+        salud_snapshot: marcador.salud || [],
+        fechaCierre: new Date(),
+      });
+    }
+
+    return this.marcadorAnualRepo.save(registroAnual);
+  }
+
+  /**
+   * Obtiene los datos de un marcador para un año específico.
+   * Si es el año actual y no hay snapshot, devuelve los datos vivos.
+   * Si es un año pasado, devuelve el snapshot congelado.
+   */
+  async findByAnio(marcadorId: number, anio: number) {
+    const anioActual = new Date().getFullYear();
+
+    // Si es el año actual, devolver datos vivos
+    if (anio === anioActual) {
+      const marcador = await this.findOne(marcadorId);
+      if (!marcador) {
+        throw new NotFoundException('Marcador no encontrado');
+      }
+      return {
+        anio,
+        esDatoVivo: true,
+        marcador,
+      };
+    }
+
+    // Si es un año pasado, buscar el snapshot
+    const registroAnual = await this.marcadorAnualRepo.findOne({
+      where: { marcador_id: marcadorId, anio },
+    });
+
+    if (!registroAnual) {
+      throw new NotFoundException(`No se encontraron datos del marcador para el año ${anio}`);
+    }
+
+    return {
+      anio,
+      esDatoVivo: false,
+      marcador: {
+        id: marcadorId,
+        nombre: registroAnual.nombre,
+        apellido: registroAnual.apellido,
+        direccion: registroAnual.direccion,
+        telefono: registroAnual.telefono,
+        dni: registroAnual.dni,
+        barrio: registroAnual.barrio,
+        tiempo_residencia: registroAnual.tiempo_residencia,
+        notas: registroAnual.notas,
+        latitud: registroAnual.latitud,
+        longitud: registroAnual.longitud,
+        icono: registroAnual.icono,
+        integrantes: registroAnual.integrantes_snapshot,
+        programas: registroAnual.programas_snapshot,
+        estudios: registroAnual.estudios_snapshot,
+        ocupaciones: registroAnual.ocupaciones_snapshot,
+        viviendas: registroAnual.viviendas_snapshot,
+        servicios: registroAnual.servicios_snapshot,
+        salud: registroAnual.salud_snapshot,
+      },
+      fechaCierre: registroAnual.fechaCierre,
+    };
+  }
+
+  /**
+   * Obtiene todos los años disponibles para un marcador.
+   */
+  async getAniosDisponibles(marcadorId: number): Promise<number[]> {
+    const marcador = await this.marcadorRepo.findOne({ where: { id: marcadorId } });
+    if (!marcador) {
+      throw new NotFoundException('Marcador no encontrado');
+    }
+
+    const registros = await this.marcadorAnualRepo.find({
+      where: { marcador_id: marcadorId },
+      select: ['anio'],
+      order: { anio: 'DESC' },
+    });
+
+    const anios = registros.map((r) => r.anio);
+
+    // Agregar el año actual si no está en la lista
+    const anioActual = new Date().getFullYear();
+    if (!anios.includes(anioActual)) {
+      anios.unshift(anioActual);
+    }
+
+    return anios;
+  }
+
+  /**
+   * Congela todos los marcadores para un año específico (operación masiva).
+   * Útil para cerrar un año completo de una vez.
+   */
+  async cerrarAnioMasivo(anio: number): Promise<{ total: number; procesados: number }> {
+    const marcadores = await this.marcadorRepo.find();
+    let procesados = 0;
+
+    for (const marcador of marcadores) {
+      // Solo congelar si no existe ya un registro para ese año
+      const existente = await this.marcadorAnualRepo.findOne({
+        where: { marcador_id: marcador.id, anio },
+      });
+
+      if (!existente) {
+        await this.cerrarAnio(marcador.id, anio);
+        procesados++;
+      }
+    }
+
+    return { total: marcadores.length, procesados };
+  }
+
+  /**
+   * Compara datos de un marcador entre dos años.
+   */
+  async compararAnios(marcadorId: number, anio1: number, anio2: number) {
+    const datos1 = await this.findByAnio(marcadorId, anio1);
+    const datos2 = await this.findByAnio(marcadorId, anio2);
+
+    const campos = ['nombre', 'apellido', 'direccion', 'telefono', 'dni', 'barrio', 'tiempo_residencia', 'notas', 'latitud', 'longitud', 'icono'];
+    const diferencias = {};
+
+    campos.forEach((campo) => {
+      const val1 = datos1.marcador[campo];
+      const val2 = datos2.marcador[campo];
+      if (val1 !== val2) {
+        diferencias[campo] = {
+          [`anio_${anio1}`]: val1,
+          [`anio_${anio2}`]: val2,
+        };
+      }
+    });
+
+    return {
+      marcadorId,
+      anio1,
+      anio2,
+      diferencias,
+      datos_anio1: datos1.marcador,
+      datos_anio2: datos2.marcador,
+    };
   }
 }
