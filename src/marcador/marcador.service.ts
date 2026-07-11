@@ -27,7 +27,11 @@ export class MarcadorService {
   ) {}
 
   create(data: Partial<Marcador>) {
-    const nuevo = this.marcadorRepo.create(data);
+    const anioActual = new Date().getFullYear();
+    const nuevo = this.marcadorRepo.create({
+      ...data,
+      anios: data.anios ?? [anioActual],
+    });
     return this.marcadorRepo.save(nuevo);
   }
 
@@ -142,6 +146,14 @@ export class MarcadorService {
     });
 
     await this.marcadorAnualRepo.save(snapshot);
+
+    // Agregar el año actual a anios si todavía no está
+    const aniosActuales: number[] = marcadorConRelaciones.anios || [];
+    if (!aniosActuales.includes(anioActual)) {
+      await this.marcadorRepo.update(marcadorId, {
+        anios: [...aniosActuales, anioActual],
+      });
+    }
   }
 
   async update(id: number, data: Partial<Marcador>) {
@@ -175,8 +187,11 @@ export class MarcadorService {
       viviendas,
       servicios,
       salud,
+      // campos virtuales que devuelve findAllByAnio, no pertenecen a la entidad
+      anio_dato,
+      esDatoVivo,
       ...resto
-    } = data;
+    } = data as any;
 
     // Crear historial manual antes de cualquier cambio significativo en relaciones
     const tieneRelaciones = integrantes || programas || estudios || ocupaciones || viviendas || servicios || salud;
@@ -374,19 +389,22 @@ async remove(id: number) {
   async findAllByAnio(anio: number): Promise<any[]> {
     const anioActual = new Date().getFullYear();
 
-    // Traer todos los marcadores con sus relaciones (datos vivos)
-    const marcadores = await this.marcadorRepo.find({
-      relations: [
-        'integrantes',
-        'integrantes.salud',
-        'programas',
-        'estudios',
-        'ocupaciones',
-        'viviendas',
-        'servicios',
-        'salud',
-      ],
-    });
+    // Filtrar marcadores: creados en el año pedido O que tienen ese año en su array anios
+    const marcadores = await this.marcadorRepo
+      .createQueryBuilder('m')
+      .leftJoinAndSelect('m.integrantes', 'integrantes')
+      .leftJoinAndSelect('integrantes.salud', 'integranteSalud')
+      .leftJoinAndSelect('m.programas', 'programas')
+      .leftJoinAndSelect('m.estudios', 'estudios')
+      .leftJoinAndSelect('m.ocupaciones', 'ocupaciones')
+      .leftJoinAndSelect('m.viviendas', 'viviendas')
+      .leftJoinAndSelect('m.servicios', 'servicios')
+      .leftJoinAndSelect('m.salud', 'salud')
+      .where('YEAR(m.fechaCreacion) = :anio', { anio })
+      .orWhere('(m.anios IS NOT NULL AND JSON_CONTAINS(m.anios, :anioVal))', {
+        anioVal: JSON.stringify(anio),
+      })
+      .getMany();
 
     // Si piden el año actual o futuro, devolver datos vivos directamente
     if (anio >= anioActual) {
@@ -397,10 +415,15 @@ async remove(id: number) {
       }));
     }
 
+    if (marcadores.length === 0) return [];
+
     // Para años pasados, buscar el snapshot más cercano sin pasarse del año pedido
+    // (solo para los marcadores filtrados)
+    const marcadorIds = marcadores.map((m) => m.id);
     const snapshots = await this.marcadorAnualRepo
       .createQueryBuilder('a')
-      .where('a.anio <= :anio', { anio })
+      .where('a.marcador_id IN (:...marcadorIds)', { marcadorIds })
+      .andWhere('a.anio <= :anio', { anio })
       .orderBy('a.anio', 'DESC')
       .getMany();
 
@@ -528,7 +551,33 @@ async remove(id: number) {
       });
     }
 
-    return this.marcadorAnualRepo.save(registroAnual);
+    const snapshotGuardado = await this.marcadorAnualRepo.save(registroAnual);
+
+    // Agregar el año siguiente a anios del marcador vivo
+    const proxAnio = anio + 1;
+    const aniosActuales: number[] = marcador.anios || [];
+    if (!aniosActuales.includes(proxAnio)) {
+      await this.marcadorRepo.update(marcadorId, {
+        anios: [...aniosActuales, proxAnio],
+      });
+    }
+
+    // Limpiar programas y notas del marcador vivo para el año nuevo
+    await this.limpiarParaAnioNuevo(marcadorId);
+
+    return snapshotGuardado;
+  }
+
+  /**
+   * Limpia programas y notas del marcador vivo para empezar el año nuevo en blanco.
+   * Solo se llama después de haber guardado el snapshot del año cerrado.
+   */
+  private async limpiarParaAnioNuevo(marcadorId: number): Promise<void> {
+    // Eliminar todos los programas del marcador
+    await this.programaRepo.delete({ marcador: { id: marcadorId } });
+
+    // Limpiar notas del marcador
+    await this.marcadorRepo.update(marcadorId, { notas: null });
   }
 
   /**

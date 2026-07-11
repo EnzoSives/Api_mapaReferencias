@@ -54,6 +54,9 @@ export class Marcador {
   @CreateDateColumn({ type: 'timestamp' })
   fechaCreacion: Date;
 
+  @Column({ type: 'json', nullable: true })
+  anios: number[];
+
   @OneToMany(() => IntegranteFamilia, (integrante) => integrante.marcador, {
     cascade: true,
   })
